@@ -1,21 +1,21 @@
 const CACHE_NAME = 'field-material-cache-v1';
 const urlsToCache = [
-  './', // Caches the main HTML file
+  './',
   'manifest.json',
-  // The external XLSX library is critical for export, so we must cache it:
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 
-  // Add icon files here if you create them: 'icon-192.png', 'icon-512.png',
+  'icon-192.png',
+  'icon-512.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
 ];
 
 // Install: Cache all essential files
 self.addEventListener('install', event => {
-  self.skipWaiting(); 
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    .then(cache => {
+      console.log('Opened cache');
+      return cache.addAll(urlsToCache);
+    })
   );
 });
 
@@ -40,15 +40,27 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
+    caches.match(event.request).then(cachedResponse => {
+      if (cachedResponse) {
+        // Update cache in the background
+        fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+          }
+        });
+        return cachedResponse;
+      }
+      
+      // If not in cache, fetch from network and cache it
+      return fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
         }
-        
-        // No cache hit - fetch from network
-        return fetch(event.request);
-      })
+        return response;
+      });
+    }).catch(() => {
+      // Optional fallback if offline and not in cache
+      return caches.match('./'); // fallback to main page
+    })
   );
 });
