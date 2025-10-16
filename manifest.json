@@ -1,6 +1,6 @@
 {
   "name": "Field Material App",
-  "short_name": "MatApp",
+  "short_name": "Field Materials Tracking",
   "description": "Field Material Management App - Track materials offline",
   "start_url": "./",
   "display": "standalone",
